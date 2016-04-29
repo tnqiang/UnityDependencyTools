@@ -170,7 +170,9 @@ public class ObjectRepo
         string[] assets = AssetDatabase.GetAllAssetPaths();
         for (int i = 0; assets != null && i < assets.Length; ++i)
         {
-            EditorUtility.DisplayProgressBar("Dependencies Tool Initializing", "processing...", (float)i / assets.Length);
+            EditorUtility.DisplayProgressBar("Dependencies Tool Initializing",
+                "this may take a few minutes, progress:" + i + "/" + assets.Length,
+                (float)i / assets.Length);
             ImportAsset(assets[i]);
         }
         Serialize();
@@ -321,7 +323,7 @@ public class ObjectRepo
                 List<string> lstDepBy = keyValue.Value;
                 content.Append(keyValue.Key);
                 content.Append(":");
-                EditorUtility.DisplayProgressBar("Dependencies Tool Initializing", num + "/" + dicDepBy.Count, (float)num / dicDepBy.Count);
+                //EditorUtility.DisplayProgressBar("Dependencies Tool Initializing", num + "/" + dicDepBy.Count, (float)num / dicDepBy.Count);
                 StringBuilder builder = new StringBuilder();
                 for (int index = 0; lstDepBy != null && index < lstDepBy.Count; ++index)
                 {
@@ -331,7 +333,7 @@ public class ObjectRepo
                 content.Append(builder);
                 content.Append("\r\n");
             }
-            EditorUtility.ClearProgressBar();
+            //EditorUtility.ClearProgressBar();
 
             contentStr = content.ToString();
         }
