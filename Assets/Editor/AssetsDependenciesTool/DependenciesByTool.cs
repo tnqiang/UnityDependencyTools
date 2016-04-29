@@ -254,8 +254,8 @@ public class ObjectRepo
 				dicDepBy.Remove(lstDepBy[i]);
 			lstDepBy[i] = AssetDatabase.GUIDToAssetPath(lstDepBy[i]);
 		}
-		lstDep.Remove (assetPath);
-		lstDepBy.Remove (assetPath);
+		if(lstDep != null ) lstDep.Remove (assetPath);
+        if (lstDepBy != null) lstDepBy.Remove(assetPath);
 		for (int i=0; lstDep != null && i<lstDep.Count; ++i)
 		{
 			ImportAsset(lstDep[i]);
