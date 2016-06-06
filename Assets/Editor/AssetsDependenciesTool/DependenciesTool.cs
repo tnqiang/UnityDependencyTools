@@ -11,7 +11,19 @@ public class DependenciesTool
         _GetDependencies<UnityEngine.Object>();
     }
 
-    [MenuItem("Assets/Select Dependencies Pro/Audio")]
+    [MenuItem("Assets/Select Dependencies Pro/AnimationClip")]
+    private static void SelectAnimationClipDependencies()
+    {
+        _GetDependencies<UnityEngine.AnimationClip>();
+    }
+
+    [MenuItem("Assets/Select Dependencies Pro/AnimationContoller")]
+    private static void SelectAnimationControllerDependencies()
+    {
+        _GetDependencies(".contorller");
+    }
+
+    [MenuItem("Assets/Select Dependencies Pro/AudioClip")]
     private static void SelectAudioDependencies()
     {
         _GetDependencies<UnityEngine.AudioClip>();
@@ -29,6 +41,19 @@ public class DependenciesTool
         _GetDependencies<UnityEngine.Material>();
     }
 
+    [MenuItem("Assets/Select Dependencies Pro/Mesh")]
+    private static void SelectMeshDependencies()
+    {
+        _GetDependencies<UnityEngine.Mesh>();
+    }
+
+
+    [MenuItem("Assets/Select Dependencies Pro/Model")]
+    private static void SelectModelDependencies()
+    {
+        _GetDependencies(".fbx");
+    }
+
     [MenuItem("Assets/Select Dependencies Pro/PhysicMaterial")]
     private static void SelectPhysicMaterialDependencies()
     {
@@ -38,19 +63,13 @@ public class DependenciesTool
     [MenuItem("Assets/Select Dependencies Pro/Prefab")]
     private static void SelectPrefabDependencies()
     {
-        _GetDependencies("prefab");
+        _GetDependencies(".prefab");
     }
 
     [MenuItem("Assets/Select Dependencies Pro/Script")]
     private static void SelectScriptDependencies()
     {
         _GetDependencies(".cs");
-    }
-
-    [MenuItem("Assets/Select Dependencies Pro/Sprite")]
-    private static void SelectSpriteDependencies()
-    {
-        _GetDependencies<UnityEngine.Sprite>();
     }
 
     [MenuItem("Assets/Select Dependencies Pro/Shader")]
@@ -63,6 +82,12 @@ public class DependenciesTool
     private static void SelectTextureDependencies()
     {
         _GetDependencies<UnityEngine.Texture>();
+    }
+
+    [MenuItem("Assets/Select Dependencies Pro/Sprite")]
+    private static void SelectSpriteDependencies()
+    {
+        _GetDependencies<UnityEngine.Sprite>();
     }
 
     private static void _GetDependencies<T>() where T : UnityEngine.Object
@@ -90,7 +115,7 @@ public class DependenciesTool
         assetPathDependenciesBy.AddRange(AssetDatabase.GetDependencies(lstPathNames.ToArray()));
         for (int i = assetPathDependenciesBy.Count - 1; i >= 0; --i)
         {
-            if(!assetPathDependenciesBy[i].EndsWith(type))
+            if(!assetPathDependenciesBy[i].ToLower().EndsWith(type))
             {
                 assetPathDependenciesBy.RemoveAt(i);
             }

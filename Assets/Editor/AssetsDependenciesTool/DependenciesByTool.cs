@@ -56,10 +56,16 @@ public class DependenciesByTool : AssetPostprocessor
 	/// Select Objects which depend by selected Objects
 	/// </summary>
 	[MenuItem("Assets/Select Dependencies By/All")]
-	private static void SelectDependenciesBy()
+	private static void SelectDependenciesByAll()
 	{
         _GetDependenciesBy<UnityEngine.Object>();
 	}
+
+    [MenuItem("Assets/Select Dependencies By/AnimationController")]
+    private static void SelectDependenciesByAnimationController()
+    {
+        _GetDependenciesBy(".controller");
+    }
 
     [MenuItem("Assets/Select Dependencies By/Material")]
     private static void SelectDependenciesByMaterial()
@@ -67,16 +73,28 @@ public class DependenciesByTool : AssetPostprocessor
         _GetDependenciesBy<UnityEngine.Material>();
     }
 
+    [MenuItem("Assets/Select Dependencies By/Mesh")]
+    private static void SelectDependenciesByMesh()
+    {
+        _GetDependenciesBy<UnityEngine.Mesh>();
+    }
+
+    [MenuItem("Assets/Select Dependencies By/Model")]
+    private static void SelectDependenciesByModel()
+    {
+        _GetDependenciesBy(".fbx");
+    }
+
     [MenuItem("Assets/Select Dependencies By/Prefab")]
     private static void SelectDependenciesByPrefab()
     {
-        _GetDependenciesBy("prefab");
+        _GetDependenciesBy(".prefab");
     }
 
     [MenuItem("Assets/Select Dependencies By/Scene")]
     private static void SelectDependenciesByScene()
     {
-        _GetDependenciesBy("unity");
+        _GetDependenciesBy(".unity");
     }
 
     [MenuItem("Assets/Select Dependencies By/PhysicMaterial")]
@@ -84,6 +102,22 @@ public class DependenciesByTool : AssetPostprocessor
     {
         _GetDependenciesBy<UnityEngine.PhysicMaterial>();
     }
+
+    // todo: 应该将引用关系在 Hierarchy 视图中展示出来，这样子更加直观
+    [MenuItem("Assets/Select Dependencies By/ShowDependencyInHierarchy")]
+    private static void ShowDependencyInHierarchy()
+    {
+
+    }
+
+    //[MenuItem("Assets/Select Dependencies By/ClearAllUnusedAssets")]
+    //private static void ClearAllUnusedAssets()
+    //{
+    //    /// 清理工程中所有的未使用资源
+    //    /// 使用的资源包括：
+    //    /// 1. 所有的场景里面的资源和依赖的资源；
+    //    /// 2. 
+    //}
 
     private static void _GetDependenciesBy<T>() where T : UnityEngine.Object
     {
@@ -118,7 +152,7 @@ public class DependenciesByTool : AssetPostprocessor
         for (int i = 0; i < guidDependenciesBy.Count; ++i)
         {
             string path = AssetDatabase.GUIDToAssetPath(guidDependenciesBy[i]);
-            if(path.EndsWith(type))
+            if(path.ToLower().EndsWith(type))
             {
                 assetPathDependenciesBy.Add(path);
             }
@@ -175,8 +209,12 @@ public class ObjectRepo
                 (float)i / assets.Length);
             ImportAsset(assets[i]);
         }
+        if (assets != null && assets.Length > 0)
+        {
+            EditorUtility.ClearProgressBar();
+        }
+
         Serialize();
-        EditorUtility.ClearProgressBar();
     }
 
 	public bool ImportAsset(string assetPath)
