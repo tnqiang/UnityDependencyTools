@@ -61,6 +61,14 @@ public class DependenciesByTool : AssetPostprocessor
         _GetDependenciesBy<UnityEngine.Object>();
 	}
 
+	#if UNITY_5
+	[MenuItem("Assets/Select Dependencies By/All Directly")]
+	private static void SelectDirectlyDependenciesByAll()
+	{
+		_GetDependenciesBy<UnityEngine.Object> (true);
+	}
+	#endif
+
     [MenuItem("Assets/Select Dependencies By/AnimationController")]
     private static void SelectDependenciesByAnimationController()
     {
@@ -110,16 +118,7 @@ public class DependenciesByTool : AssetPostprocessor
 
     }
 
-    //[MenuItem("Assets/Select Dependencies By/ClearAllUnusedAssets")]
-    //private static void ClearAllUnusedAssets()
-    //{
-    //    /// 清理工程中所有的未使用资源
-    //    /// 使用的资源包括：
-    //    /// 1. 所有的场景里面的资源和依赖的资源；
-    //    /// 2. 
-    //}
-
-    private static void _GetDependenciesBy<T>() where T : UnityEngine.Object
+	private static void _GetDependenciesBy<T>(bool directlyDepend = false) where T : UnityEngine.Object
     {
         string[] selections = Selection.assetGUIDs;
         List<string> guidDependenciesBy = new List<string>();
@@ -127,14 +126,42 @@ public class DependenciesByTool : AssetPostprocessor
         for (int i = 0; selections != null && i < selections.Length; ++i)
         {
             List<string> lst = repo.GetDepencenciesBy(selections[i]);
-            if (null != lst)
-                guidDependenciesBy.AddRange(lst);
+			if (null != lst)
+			{
+				guidDependenciesBy.AddRange (lst);
+			}
         }
         for (int i = 0; i < guidDependenciesBy.Count; ++i)
         {
             string path = AssetDatabase.GUIDToAssetPath(guidDependenciesBy[i]);
             assetPathDependenciesBy.Add(path);
         }
+
+		for (int i = assetPathDependenciesBy.Count-1; i >=0 ; --i)
+		{
+			List<string> dependencies = new List<string> ();
+			#if UNITY_5
+			dependencies.AddRange (AssetDatabase.GetDependencies (new string[]{ assetPathDependenciesBy [i] }, !directlyDepend));
+			#else
+			dependencies.AddRange (AssetDatabase.GetDependencies (new string[]{ assetPathDependenciesBy [i] });
+			#endif
+			bool contains = false;
+			for (int j = 0; j < selections.Length; ++j)
+			{
+				string path = AssetDatabase.GUIDToAssetPath (selections [j]);
+				if (dependencies.Contains (path))
+				{
+					contains = true;
+					break;
+				}
+			}
+			if (!contains)
+			{
+				assetPathDependenciesBy.RemoveAt (i);
+			}
+		}
+
+
         ShowSelectedObjectsTool.ShowSelectedObjectsInProjectBrowser<T>(assetPathDependenciesBy);
     }
 
@@ -158,6 +185,36 @@ public class DependenciesByTool : AssetPostprocessor
             }
         }
         ShowSelectedObjectsTool.ShowSelectedObjectsInProjectBrowser<UnityEngine.Object>(assetPathDependenciesBy);
+    }
+
+    public static string[] _GetDependenciesPathBy(string componentAssetPath, string type, string[] searchInFolders)
+    {
+        List<string> ret = new List<string>();
+        string compAssetGUID = AssetDatabase.AssetPathToGUID(componentAssetPath);
+        List<string> guidDependenciesBy = repo.GetDepencenciesBy(compAssetGUID);
+        for (int i = 0; i < guidDependenciesBy.Count; ++i)
+        {
+            string path = AssetDatabase.GUIDToAssetPath(guidDependenciesBy[i]);
+            if (path.ToLower().EndsWith(type) && IsInFolders(path, searchInFolders))
+            {
+                ret.Add(path.Replace("Assets/Resources/", ""));
+            }
+        }
+        return ret.ToArray();
+    }
+
+    private static bool IsInFolders(string assetPath, string[] searchInFolders)
+    {
+        bool ret = false;
+        foreach (string item in searchInFolders)
+        {
+            if (assetPath.Contains(item))
+            {
+                ret = true;
+                break;
+            }
+        }
+        return ret;
     }
 }
 
@@ -199,9 +256,10 @@ public class ObjectRepo
 
     public void ParseFromRepo()
     {
-        dicDepBy = new Dictionary<string, List<string>>();
-        dicDep = new Dictionary<string, List<string>>();
-        string[] assets = AssetDatabase.GetAllAssetPaths();
+		string[] assets = AssetDatabase.GetAllAssetPaths();
+		dicDepBy = new Dictionary<string, List<string>>(assets.Length);
+		dicDep = new Dictionary<string, List<string>>(assets.Length);
+
         for (int i = 0; assets != null && i < assets.Length; ++i)
         {
             EditorUtility.DisplayProgressBar("Dependencies Tool Initializing",
@@ -316,7 +374,16 @@ public class ObjectRepo
 			string[] objectAndDep = allLines[index].Split(new char[]{':'}, System.StringSplitOptions.RemoveEmptyEntries);
 			if(objectAndDep.Length < 2)
 			{
-				Debug.LogError("Config file is broken, suggests rebuild it when needed or free");
+				File.Delete (configFilePath);
+				bool option = EditorUtility.DisplayDialog ("Warning", "Dependency tool find the config file is broken. " +
+					"Suggest you regenerate the config file." +
+					"This may take a few minutes(depending on the assets num). You can ignore and this will occur next time you open unity." +
+					"Generate Now?", "Generate", "Next time");
+				if (option)
+				{
+					ParseFromRepo ();
+				}
+				//Debug.LogError("Config file is broken, suggests rebuild it when needed or free");
 			}
 			else
 			{

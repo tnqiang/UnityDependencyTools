@@ -11,6 +11,14 @@ public class DependenciesTool
         _GetDependencies<UnityEngine.Object>();
     }
 
+	#if UNITY_5
+	[MenuItem("Assets/Select Dependencies Pro/All Directly")]
+	private static void SelectDirectlyDependenciesAll()
+	{
+		_GetDependencies<UnityEngine.Object> (true);
+	}
+	#endif
+
     [MenuItem("Assets/Select Dependencies Pro/AnimationClip")]
     private static void SelectAnimationClipDependencies()
     {
@@ -90,7 +98,7 @@ public class DependenciesTool
         _GetDependencies<UnityEngine.Sprite>();
     }
 
-    private static void _GetDependencies<T>() where T : UnityEngine.Object
+	private static void _GetDependencies<T>(bool directlyDepend = false) where T : UnityEngine.Object
     {
         string[] selections = Selection.assetGUIDs;
         List<string> lstPathNames = new List<string>();
@@ -99,7 +107,11 @@ public class DependenciesTool
         {
             lstPathNames.Add(AssetDatabase.GUIDToAssetPath(selections[i]));
         }
-        assetPathDependenciesBy.AddRange(AssetDatabase.GetDependencies(lstPathNames.ToArray()));
+		#if UNITY_5
+		assetPathDependenciesBy.AddRange(AssetDatabase.GetDependencies(lstPathNames.ToArray(), !directlyDepend));
+		#else
+		assetPathDependenciesBy.AddRange(AssetDatabase.GetDependencies(lstPathNames.ToArray());
+		#endif
         ShowSelectedObjectsTool.ShowSelectedObjectsInProjectBrowser<T>(assetPathDependenciesBy);
     }
 
