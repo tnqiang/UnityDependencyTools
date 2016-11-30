@@ -111,13 +111,6 @@ public class DependenciesByTool : AssetPostprocessor
         _GetDependenciesBy<UnityEngine.PhysicMaterial>();
     }
 
-    // todo: 应该将引用关系在 Hierarchy 视图中展示出来，这样子更加直观
-    [MenuItem("Assets/Select Dependencies By/ShowDependencyInHierarchy")]
-    private static void ShowDependencyInHierarchy()
-    {
-
-    }
-
 	private static void _GetDependenciesBy<T>(bool directlyDepend = false) where T : UnityEngine.Object
     {
         string[] selections = Selection.assetGUIDs;
