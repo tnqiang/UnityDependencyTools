@@ -10,7 +10,7 @@ using UnityEngine;
 
 [InitializeOnLoad]
 public class DependenciesByTool : AssetPostprocessor
-{    
+{
 	private static ObjectRepo repo;
 	private static bool initialized = false;
 
@@ -29,7 +29,6 @@ public class DependenciesByTool : AssetPostprocessor
 			if(repo.ImportAsset(importedAssets[i]))
             {
                 needSerialize = true;
-
             }
 		}
 		for (int i=0; deletedAssets != null && i < deletedAssets.Length; ++i) 
@@ -111,103 +110,92 @@ public class DependenciesByTool : AssetPostprocessor
         _GetDependenciesBy<UnityEngine.PhysicMaterial>();
     }
 
-	private static void _GetDependenciesBy<T>(bool directlyDepend = false) where T : UnityEngine.Object
+    [MenuItem("Assets/DependencyTool/Initialize")]
+    private static void ShowDependencyInHierarchy()
     {
-        string[] selections = Selection.assetGUIDs;
-        List<string> guidDependenciesBy = new List<string>();
+        repo = new ObjectRepo ();
+        repo.Initialize (true);
+        initialized = true;
+    }
+
+    /// <summary>
+    /// Gets the dependencies by assetPathName
+    /// </summary>
+    /// <returns>The dependencies by.</returns>
+    /// <param name="assetPathName">Asset path name.</param>
+    /// <param name="directlyDepend">If set to <c>true</c> directly depend.</param>
+    public static List<string> GetDependenciesBy(string assetPathName, bool directlyDepend)
+    {
         List<string> assetPathDependenciesBy = new List<string>();
-        for (int i = 0; selections != null && i < selections.Length; ++i)
+        string guid = AssetDatabase.AssetPathToGUID(assetPathName);
+
+        List<string> assetGuidDependenciesBy  = repo.GetDepencenciesBy(guid);
+        for (int i = 0; i < assetGuidDependenciesBy.Count; ++i)
         {
-            List<string> lst = repo.GetDepencenciesBy(selections[i]);
-			if (null != lst)
-			{
-				guidDependenciesBy.AddRange (lst);
-			}
-        }
-        for (int i = 0; i < guidDependenciesBy.Count; ++i)
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guidDependenciesBy[i]);
+            string path = AssetDatabase.GUIDToAssetPath(assetGuidDependenciesBy[i]);
             assetPathDependenciesBy.Add(path);
         }
 
-		for (int i = assetPathDependenciesBy.Count-1; i >=0 ; --i)
-		{
-			List<string> dependencies = new List<string> ();
-			#if UNITY_5
-			dependencies.AddRange (AssetDatabase.GetDependencies (new string[]{ assetPathDependenciesBy [i] }, !directlyDepend));
-			#else
-			dependencies.AddRange (AssetDatabase.GetDependencies (new string[]{ assetPathDependenciesBy [i] });
-			#endif
-			bool contains = false;
-			for (int j = 0; j < selections.Length; ++j)
-			{
-				string path = AssetDatabase.GUIDToAssetPath (selections [j]);
-				if (dependencies.Contains (path))
-				{
-					contains = true;
-					break;
-				}
-			}
-			if (!contains)
-			{
-				assetPathDependenciesBy.RemoveAt (i);
-			}
-		}
+        for (int i = assetPathDependenciesBy.Count-1; i >=0 ; --i)
+        {
+            List<string> dependencies = new List<string> ();
+            #if UNITY_5
+            dependencies.AddRange (AssetDatabase.GetDependencies (new string[]{ assetPathDependenciesBy [i] }, !directlyDepend));
+            #else
+            dependencies.AddRange (AssetDatabase.GetDependencies (new string[]{ assetPathDependenciesBy [i] });
+            #endif
+            string path = AssetDatabase.GUIDToAssetPath (guid);
+            if (!dependencies.Contains (path))
+            {
+                assetPathDependenciesBy.RemoveAt (i);
+            }
+        }
 
-
-        ShowSelectedObjectsTool.ShowSelectedObjectsInProjectBrowser<T>(assetPathDependenciesBy);
+        return assetPathDependenciesBy;
     }
 
-    private static void _GetDependenciesBy(string type)
+    /// <summary>
+    /// Gets the dependencies by assetPathName
+    /// </summary>
+    /// <returns>The dependencies by.</returns>
+    /// <param name="assetPathName">Asset path name.</param>
+    /// <param name="typeSuffix">Type suffix.</param>
+    /// <param name="directlyDepend">If set to <c>true</c> directly depend.</param>
+    public static List<string> GetDependenciesBy(string assetPathName, string typeSuffix, bool directlyDepend)
+    {
+        List<string> assetPathDependenciesBy = GetDependenciesBy(assetPathName, directlyDepend);
+        for (int i = assetPathDependenciesBy.Count - 1; i >= 0; --i)
+        {
+            if (!assetPathDependenciesBy[i].ToLower().EndsWith(typeSuffix))
+            {
+                assetPathDependenciesBy.RemoveAt(i);
+            }
+        }
+        return assetPathDependenciesBy;
+    }
+
+	private static void _GetDependenciesBy<T>(bool directlyDepend = false) where T : UnityEngine.Object
     {
         string[] selections = Selection.assetGUIDs;
-        List<string> guidDependenciesBy = new List<string>();
         List<string> assetPathDependenciesBy = new List<string>();
         for (int i = 0; selections != null && i < selections.Length; ++i)
         {
-            List<string> lst = repo.GetDepencenciesBy(selections[i]);
-            if (null != lst)
-                guidDependenciesBy.AddRange(lst);
+            string path = AssetDatabase.GUIDToAssetPath(selections[i]);
+            assetPathDependenciesBy.AddRange(GetDependenciesBy(path, directlyDepend));
         }
-        for (int i = 0; i < guidDependenciesBy.Count; ++i)
+        ShowSelectedObjectsTool.ShowSelectedObjectsInProjectBrowser<T>(assetPathDependenciesBy);
+    }
+
+    private static void _GetDependenciesBy(string type, bool directlyDepend = false)
+    {
+        string[] selections = Selection.assetGUIDs;
+        List<string> assetPathDependenciesBy = new List<string>();
+        for (int i = 0; selections != null && i < selections.Length; ++i)
         {
-            string path = AssetDatabase.GUIDToAssetPath(guidDependenciesBy[i]);
-            if(path.ToLower().EndsWith(type))
-            {
-                assetPathDependenciesBy.Add(path);
-            }
+            string path = AssetDatabase.GUIDToAssetPath(selections[i]);
+            assetPathDependenciesBy.AddRange(GetDependenciesBy(path, type, directlyDepend));
         }
         ShowSelectedObjectsTool.ShowSelectedObjectsInProjectBrowser<UnityEngine.Object>(assetPathDependenciesBy);
-    }
-
-    public static string[] _GetDependenciesPathBy(string componentAssetPath, string type, string[] searchInFolders)
-    {
-        List<string> ret = new List<string>();
-        string compAssetGUID = AssetDatabase.AssetPathToGUID(componentAssetPath);
-        List<string> guidDependenciesBy = repo.GetDepencenciesBy(compAssetGUID);
-        for (int i = 0; i < guidDependenciesBy.Count; ++i)
-        {
-            string path = AssetDatabase.GUIDToAssetPath(guidDependenciesBy[i]);
-            if (path.ToLower().EndsWith(type) && IsInFolders(path, searchInFolders))
-            {
-                ret.Add(path.Replace("Assets/Resources/", ""));
-            }
-        }
-        return ret.ToArray();
-    }
-
-    private static bool IsInFolders(string assetPath, string[] searchInFolders)
-    {
-        bool ret = false;
-        foreach (string item in searchInFolders)
-        {
-            if (assetPath.Contains(item))
-            {
-                ret = true;
-                break;
-            }
-        }
-        return ret;
     }
 }
 
@@ -216,20 +204,49 @@ public class ObjectRepo
 	private Dictionary<string, List<string>> dicDepBy;
 	private Dictionary<string, List<string>> dicDep;
 	private static string configFilePath = Application.dataPath + "/../Library/DependenciesBy.config";
+    private static string tmpConfigFilePath = Application.dataPath + "/../Library/DependenciesBy_tmp.config";
     private string contentStr;
     private List<string> lstChanged = new List<string>();
     private List<string> lstMoved = new List<string>();
     private List<string> lstAdded = new List<string>();
+    private static string usrOptionKey = "USER_OPTION";
 
-	public void Initialize()
+    public void Initialize(bool forceReimport = false)
 	{
-		if (File.Exists (configFilePath)) 
+        if (File.Exists (configFilePath) && !forceReimport)
 		{
 			Deserialize ();
 		}
 		else 
 		{
-			ParseFromRepo();
+            bool option = false;
+            if (forceReimport)
+            {
+                option = true;
+            }
+            else if (PlayerPrefs.HasKey(usrOptionKey))
+            {
+                option = false;
+            }
+            else
+            {
+                option = EditorUtility.DisplayDialog ("Info", "Dependency tool need to walk through your working repository. " +
+                    "This may take a few minutes(depending on the assets num). You can ignore this and initialize it manual from Menu(Assets/DependencyTool/Initialize). " +
+                    "Generate Now?", "OK", "Cancel");
+            }
+            if (option)
+            {
+                PlayerPrefs.DeleteKey(usrOptionKey);
+                PlayerPrefs.Save();
+                ParseFromRepo();
+            }
+            else
+            {
+                PlayerPrefs.SetInt(usrOptionKey, 1);
+                PlayerPrefs.Save();
+                dicDepBy = new Dictionary<string, List<string>>();
+                dicDep = new Dictionary<string, List<string>>();
+            }
 		}
 	}
 
@@ -270,8 +287,16 @@ public class ObjectRepo
 
 	public bool ImportAsset(string assetPath)
 	{
+        if(!assetPath.StartsWith("Assets/") || 
+            Directory.Exists(Application.dataPath + "/../" + assetPath))
+            return false;
+
 		string guid = AssetDatabase.AssetPathToGUID (assetPath);
 		string[] dependencies = AssetDatabase.GetDependencies(new string[]{assetPath});
+
+        if (dependencies == null || dependencies.Length == 0)
+            return false;
+        
 		List<string> lstDep = null;
         bool assetModified = false;
 
@@ -312,12 +337,22 @@ public class ObjectRepo
 				lstDep.Add(depGuid);
                 assetModified = true;
 			}
+
+            if (lstDep.Count < 1)
+            {
+                Debug.LogError(string.Format("Parse Asset {0} Dependency error", assetPath));
+                if (dicDep.ContainsKey(guid))
+                {
+                    dicDep.Remove(guid);
+                }
+            }
 		}
 
         if (assetModified && !lstChanged.Contains(guid))
         {
             lstChanged.Add(guid);
         }
+
         return assetModified;
 	}
 
@@ -365,41 +400,59 @@ public class ObjectRepo
 		for (int index = 0; allLines != null && index < allLines.Length; ++index) 
         {
 			string[] objectAndDep = allLines[index].Split(new char[]{':'}, System.StringSplitOptions.RemoveEmptyEntries);
-			if(objectAndDep.Length < 2)
-			{
-				File.Delete (configFilePath);
-				bool option = EditorUtility.DisplayDialog ("Warning", "Dependency tool find the config file is broken. " +
-					"Suggest you regenerate the config file." +
-					"This may take a few minutes(depending on the assets num). You can ignore and this will occur next time you open unity." +
-					"Generate Now?", "Generate", "Next time");
-				if (option)
-				{
-					ParseFromRepo ();
-				}
-				//Debug.LogError("Config file is broken, suggests rebuild it when needed or free");
-			}
-			else
-			{
-				List<string> lstDepBy = new List<string>();
-				string[] dependencies = objectAndDep[1].Split(new char[]{';'}, System.StringSplitOptions.RemoveEmptyEntries);
-				if(dependencies != null)
-				{
-					lstDepBy.AddRange(dependencies);
-				}
-				dicDepBy[objectAndDep[0]] = lstDepBy;
+            if(objectAndDep.Length == 2)
+            {
+                List<string> lstDepBy = new List<string>();
+                string[] dependencies = objectAndDep[1].Split(new char[]{';'}, System.StringSplitOptions.RemoveEmptyEntries);
+                if(dependencies != null)
+                {
+                    lstDepBy.AddRange(dependencies);
+                }
+                dicDepBy[objectAndDep[0]] = lstDepBy;
 
-				for(int i=0; dependencies != null && i<dependencies.Length; ++i)
-				{
-					List<string> lstDep = null;
-					dicDep.TryGetValue(dependencies[i], out lstDep);
-					if(null == lstDep)
-					{
-						lstDep = new List<string>();
-						dicDep.Add(dependencies[i], lstDep);
-					}
-					lstDep.Add(objectAndDep[0]);
-				}
-			}
+                for(int i=0; dependencies != null && i<dependencies.Length; ++i)
+                {
+                    List<string> lstDep = null;
+                    dicDep.TryGetValue(dependencies[i], out lstDep);
+                    if(null == lstDep)
+                    {
+                        lstDep = new List<string>();
+                        dicDep.Add(dependencies[i], lstDep);
+                    }
+                    lstDep.Add(objectAndDep[0]);
+                }
+            }
+            else if(objectAndDep.Length > 0)
+            {
+                File.Delete (configFilePath);
+                bool option = false;
+                if (PlayerPrefs.HasKey(usrOptionKey))
+                {
+                    option = false;
+                }
+                else
+                {
+                    option = EditorUtility.DisplayDialog ("Warning", "Dependency tool find the config file is broken. " +
+                        "Suggest you regenerate the config file." +
+                        "This may take a few minutes(depending on the assets num). You can ignore this and initialize it manual from Menu(Assets/DependencyTool/Initialize). " +
+                        "Generate Now?", "Generate", "Next time");
+                }
+                if (option)
+                {
+                    PlayerPrefs.DeleteKey(usrOptionKey);
+                    PlayerPrefs.Save();
+                    ParseFromRepo();
+                }
+                else
+                {
+                    PlayerPrefs.SetInt(usrOptionKey, 1);
+                    PlayerPrefs.Save();
+                    dicDepBy = new Dictionary<string, List<string>>();
+                    dicDep = new Dictionary<string, List<string>>();
+                }
+
+                Debug.LogError(string.Format("Config file is broken at line {0}, suggests rebuild it when needed or free", index+1));
+            }
 		}
 	}
 
@@ -485,13 +538,19 @@ public class ObjectRepo
         lstMoved.Clear();
         lstChanged.Clear();
 
-		using (FileStream fileStream = new FileStream(configFilePath, 
-		                                   File.Exists(configFilePath) ? FileMode.Truncate : FileMode.OpenOrCreate))
+        using (FileStream fileStream = new FileStream(tmpConfigFilePath, 
+            File.Exists(tmpConfigFilePath) ? FileMode.Truncate : FileMode.OpenOrCreate))
 		{
             byte[] bytes = System.Text.Encoding.Default.GetBytes(contentStr.ToString());
 			fileStream.Write(bytes, 0, bytes.Length);
 			fileStream.Close();
 			fileStream.Dispose();
+
+            if (File.Exists(configFilePath))
+            {
+                File.Delete(configFilePath);
+            }
+            File.Move(tmpConfigFilePath, configFilePath);
 		}
 	}
 }
